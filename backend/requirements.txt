@@ -1,3 +1,5 @@
 fastapi
 uvicorn[standard]
+mistralai
+python-dotenv
 google-genai

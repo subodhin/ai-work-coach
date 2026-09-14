@@ -1,5 +1,8 @@
+import os
+
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from .challenges import (
     get_all_challenges,
@@ -17,7 +20,6 @@ from .storage import (
     save_evaluation,
     get_evaluations,
 )
-from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -27,11 +29,19 @@ app = FastAPI(
     version="0.1.0",
 )
 
+
+# --------------------------------------------------
+# CORS
+# --------------------------------------------------
+
+frontend_url = os.getenv(
+    "FRONTEND_URL",
+    "http://localhost:3000",
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-    ],
+    allow_origins=[frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

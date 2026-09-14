@@ -24,48 +24,11 @@ The prototype uses **free-tier infrastructure with zero additional infrastructur
 
 AI Work Coach evaluates how employees use AI on realistic work tasks, identifies skill gaps, and adapts the next challenge accordingly.
 
-```text
-Challenge
-    ↓
-Use AI
-    ↓
-LLM Evaluation
-    ↓
-Skill Profile
-    ↓
-Identify Gap
-    ↓
-Adaptive Challenge
-    ↓
-Improve
-````
+<img src="./workflow.png" alt="AI Work Coach Workflow" width="600"/>
 
 ## Architecture
 
-```text
-┌──────────────┐
-│   Next.js    │
-│ React / TS   │
-└──────┬───────┘
-       │ REST
-       ↓
-┌──────────────┐
-│   FastAPI    │
-│   Backend    │
-└────┬─────┬───┘
-     │     │
-     ↓     ↓
-┌────────┐ ┌─────────────┐
-│Coaching│ │ Gemini LLM  │
-│ Logic  │ │ Evaluator   │
-└───┬────┘ └──────┬──────┘
-    └──────┬──────┘
-           ↓
-    ┌─────────────┐
-    │ PostgreSQL  │
-    │    Neon     │
-    └─────────────┘
-```
+<img src="./architecture.png" alt="AI Work Coach Architecture" width="650"/>
 
 ## Skill Framework
 

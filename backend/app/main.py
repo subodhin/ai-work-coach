@@ -45,6 +45,10 @@ frontend_url = os.getenv(
     "FRONTEND_URL",
     "http://localhost:3000",
 )
+print("CORS FRONTEND_URL::::::::::::::::::::::::::::::::::::::::::::::", frontend_url)
+print("CORS FRONTEND_URL:", frontend_url)
+print("CORS ORIGINS:", [frontend_url])
+print("ENV FRONTEND_URL:", os.getenv("FRONTEND_URL"))
 
 app.add_middleware(
     CORSMiddleware,

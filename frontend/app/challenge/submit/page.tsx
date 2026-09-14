@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getUserId } from "@/app/lib/user";
 
 type Challenge = {
   id: string;
@@ -22,7 +23,7 @@ type NextChallengeResponse = {
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000";
-  
+
 export default function SubmissionPage() {
   const router = useRouter();
 
@@ -41,7 +42,7 @@ export default function SubmissionPage() {
     async function loadChallenge() {
       try {
         const response = await fetch(
-          `${API_URL}/challenges/next`
+          `${API_URL}/challenges/next?user_id=${getUserId()}`
         );
 
         if (!response.ok) {
@@ -78,21 +79,26 @@ export default function SubmissionPage() {
     setError("");
 
     try {
-      const response = await fetch(
-        `${API_URL}/evaluate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            challenge: data.challenge.task,
-            prompt: prompt,
-            ai_output: aiOutput,
-            reflection: reflection,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/evaluate?user_id=${getUserId()}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // body: JSON.stringify({
+        //   challenge: data.challenge.task,
+        //   prompt: prompt,
+        //   ai_output: aiOutput,
+        //   reflection: reflection,
+        // }),
+
+        body: JSON.stringify({
+         challenge_id: data.challenge.id,
+         challenge: data.challenge.task,
+         prompt: prompt,
+         ai_output: aiOutput,
+         reflection: reflection,
+      }),
+      });
 
       if (!response.ok) {
         throw new Error("Evaluation failed");

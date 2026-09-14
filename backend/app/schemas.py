@@ -13,7 +13,14 @@ SkillName = Literal[
 ]
 
 
+# class EvaluationRequest(BaseModel):
+#     challenge: str
+#     prompt: str
+#     ai_output: str
+#     reflection: str = ""
+
 class EvaluationRequest(BaseModel):
+    challenge_id: str
     challenge: str
     prompt: str
     ai_output: str

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getUserId } from "../lib/user";
 
 type Challenge = {
   id: string;
@@ -14,15 +15,22 @@ type Challenge = {
   rubric: string[];
 };
 
+// type NextChallengeResponse = {
+//   challenge: Challenge;
+//   weakest_skill: string;
+// };
+
 type NextChallengeResponse = {
   challenge: Challenge;
   weakest_skill: string;
+  reason: string;
+  skill_profile: Record<string, number>;
 };
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000";
-  
+
 export default function ChallengePage() {
   const router = useRouter();
 
@@ -36,8 +44,7 @@ export default function ChallengePage() {
     async function loadChallenge() {
       try {
         const response = await fetch(
-          `${API_URL}/challenges/next`
-        );
+        `${API_URL}/challenges/next?user_id=${getUserId()}`        );
 
         if (!response.ok) {
           throw new Error("Failed to load challenge");
@@ -109,6 +116,32 @@ export default function ChallengePage() {
             </span>
           </div>
         </div>
+
+        {/* Adaptive Coaching */}
+
+<section className="mb-6 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6">
+  <p className="text-sm font-medium text-blue-400">
+    ADAPTIVE COACHING
+  </p>
+
+  <h2 className="mt-2 text-xl font-semibold">
+    Why this challenge?
+  </h2>
+
+  <p className="mt-3 leading-7 text-zinc-400">
+    {data.reason}
+  </p>
+
+  <div className="mt-4">
+    <span className="text-sm text-zinc-500">
+      Current weakest skill
+    </span>
+
+    <p className="mt-1 font-semibold capitalize text-white">
+      {data.weakest_skill.replaceAll("_", " ")}
+    </p>
+  </div>
+</section>
 
         {/* Scenario */}
 

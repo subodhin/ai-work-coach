@@ -20,10 +20,13 @@ def get_connection():
 def init_db():
     with get_connection() as conn:
         with conn.cursor() as cur:
+
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS evaluations (
                     id SERIAL PRIMARY KEY,
+                    user_id TEXT NOT NULL DEFAULT 'demo-user',
+                    challenge_id TEXT NOT NULL,
                     problem_framing INTEGER NOT NULL,
                     context INTEGER NOT NULL,
                     prompting INTEGER NOT NULL,
@@ -40,15 +43,29 @@ def init_db():
                 """
             )
 
+            # Add user_id to an existing database if the table
+            # was created before user support was added.
+            cur.execute(
+                """
+                ALTER TABLE evaluations
+                ADD COLUMN IF NOT EXISTS user_id
+                TEXT NOT NULL DEFAULT 'demo-user'
+                """
+            )
+
         conn.commit()
 
 
 def save_evaluation(evaluation: dict) -> dict:
+
     with get_connection() as conn:
         with conn.cursor() as cur:
+
             cur.execute(
                 """
                 INSERT INTO evaluations (
+                    user_id,
+                    challenge_id,
                     problem_framing,
                     context,
                     prompting,
@@ -62,6 +79,8 @@ def save_evaluation(evaluation: dict) -> dict:
                     feedback
                 )
                 VALUES (
+                    %(user_id)s,
+                    %(challenge_id)s,
                     %(problem_framing)s,
                     %(context)s,
                     %(prompting)s,
@@ -77,8 +96,17 @@ def save_evaluation(evaluation: dict) -> dict:
                 RETURNING *
                 """,
                 {
+                    "user_id": evaluation.get(
+                        "user_id",
+                        "demo-user",
+                    ),
+                    "challenge_id": evaluation[
+                        "challenge_id"
+                    ],
                     **evaluation["scores"],
-                    "overall_score": evaluation["overall_score"],
+                    "overall_score": evaluation[
+                        "overall_score"
+                    ],
                     "strengths": psycopg.types.json.Jsonb(
                         evaluation["strengths"]
                     ),
@@ -88,7 +116,9 @@ def save_evaluation(evaluation: dict) -> dict:
                     "recommended_skill": evaluation[
                         "recommended_skill"
                     ],
-                    "feedback": evaluation["feedback"],
+                    "feedback": evaluation[
+                        "feedback"
+                    ],
                 },
             )
 
@@ -99,15 +129,23 @@ def save_evaluation(evaluation: dict) -> dict:
     return saved
 
 
-def get_evaluations() -> list[dict]:
+def get_evaluations(
+    user_id: str = "demo-user",
+) -> list[dict]:
+
     with get_connection() as conn:
         with conn.cursor() as cur:
+
             cur.execute(
                 """
                 SELECT *
                 FROM evaluations
-                ORDER BY created_at ASC
-                """
+                WHERE user_id = %(user_id)s
+                ORDER BY id ASC
+                """,
+                {
+                    "user_id": user_id
+                },
             )
 
             rows = cur.fetchall()
@@ -115,8 +153,11 @@ def get_evaluations() -> list[dict]:
     evaluations = []
 
     for row in rows:
+
         evaluations.append(
             {
+                "user_id": row["user_id"],
+                "challenge_id": row["challenge_id"],
                 "scores": {
                     "problem_framing": row[
                         "problem_framing"
@@ -135,7 +176,9 @@ def get_evaluations() -> list[dict]:
                     "overall_score"
                 ],
                 "strengths": row["strengths"],
-                "weaknesses": row["weaknesses"],
+                "weaknesses": row[
+                    "weaknesses"
+                ],
                 "recommended_skill": row[
                     "recommended_skill"
                 ],

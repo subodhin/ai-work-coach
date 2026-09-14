@@ -10,14 +10,18 @@ from .challenges import (
     get_all_challenges,
     get_challenge_by_id,
 )
+
 from .coaching import (
     calculate_skill_profile,
     get_weakest_skill,
+    get_next_skill,
     get_challenge_for_skill,
 )
+
 from .evaluator import evaluate_submission
 from .llm.gemini import GeminiProvider
 from .schemas import EvaluationRequest, EvaluationResponse
+
 from .storage import (
     init_db,
     save_evaluation,
@@ -68,6 +72,7 @@ def health():
 
 @app.get("/test-ai")
 def test_ai():
+
     try:
         provider = GeminiProvider()
 
@@ -96,22 +101,55 @@ def test_ai():
 
 @app.get("/challenges")
 def get_challenges():
+
     return {
         "challenges": get_all_challenges()
     }
 
 
 @app.get("/challenges/next")
-def get_next_challenge():
+def get_next_challenge(user_id: str = "demo-user"):
 
-    evaluations = get_evaluations()
+    evaluations = get_evaluations(user_id)
+    # ----------------------------------------------
+    # First-time user
+    # ----------------------------------------------
+
+    if not evaluations:
+
+        challenge = get_challenge_for_skill(
+            "problem_framing"
+        )
+
+        if challenge is None:
+            raise HTTPException(
+                status_code=404,
+                detail="No suitable challenge found",
+            )
+
+        return {
+            "skill_profile": calculate_skill_profile([]),
+            "weakest_skill": "problem_framing",
+            "reason": (
+                "This is your first challenge. "
+                "Let's establish your baseline."
+            ),
+            "challenge": challenge,
+        }
+
+    # ----------------------------------------------
+    # Existing user
+    # ----------------------------------------------
 
     skill_profile = calculate_skill_profile(
         evaluations
     )
 
-    weakest_skill = get_weakest_skill(
-        skill_profile
+    # Use adaptive coaching logic to determine
+    # which skill should be practiced next.
+    weakest_skill = get_next_skill(
+        evaluations,
+        skill_profile,
     )
 
     challenge = get_challenge_for_skill(
@@ -127,6 +165,10 @@ def get_next_challenge():
     return {
         "skill_profile": skill_profile,
         "weakest_skill": weakest_skill,
+        "reason": (
+            f"{weakest_skill.replace('_', ' ').title()} "
+            "is currently the next skill to practice."
+        ),
         "challenge": challenge,
     }
 
@@ -155,9 +197,12 @@ def get_challenge(challenge_id: str):
     "/evaluate",
     response_model=EvaluationResponse,
 )
-def evaluate(request: EvaluationRequest):
-
+def evaluate(
+    request: EvaluationRequest,
+    user_id: str = "demo-user",
+):
     try:
+
         provider = GeminiProvider()
 
         result = evaluate_submission(
@@ -165,14 +210,20 @@ def evaluate(request: EvaluationRequest):
             request=request,
         )
 
-        # Store the evaluation.
+        evaluation_data = result.model_dump()
+
+        evaluation_data["challenge_id"] = (
+            request.challenge_id
+        )
+        evaluation_data["user_id"] = user_id
         save_evaluation(
-            result.model_dump()
+            evaluation_data
         )
 
         return result
 
     except Exception as e:
+
         raise HTTPException(
             status_code=500,
             detail=f"Evaluation failed: {str(e)}",
@@ -180,12 +231,139 @@ def evaluate(request: EvaluationRequest):
 
 
 # --------------------------------------------------
+# Latest Evaluation
+# --------------------------------------------------
+
+@app.get("/evaluations/latest")
+def get_latest_evaluation(
+    user_id: str = "demo-user",
+):
+
+    evaluations = get_evaluations(user_id)
+
+    if not evaluations:
+
+        raise HTTPException(
+            status_code=404,
+            detail="No evaluations found",
+        )
+
+    return evaluations[-1]
+
+
+# --------------------------------------------------
 # Evaluations
 # --------------------------------------------------
 
 @app.get("/evaluations")
-def get_all_evaluations():
+def get_all_evaluations(
+    user_id: str = "demo-user",
+):
 
     return {
-        "evaluations": get_evaluations()
+        "evaluations": get_evaluations(user_id)
+    }
+
+# --------------------------------------------------
+# Progress
+# --------------------------------------------------
+
+@app.get("/progress")
+def get_progress(
+    user_id: str = "demo-user",
+):
+
+    evaluations = get_evaluations(user_id)
+
+    if not evaluations:
+
+        return {
+            "has_progress": False,
+            "message": "No evaluations yet.",
+        }
+
+    skill_profile = calculate_skill_profile(
+        evaluations
+    )
+
+    weakest_skill = get_weakest_skill(
+        skill_profile
+    )
+
+    latest = evaluations[-1]
+
+    # Identify the skill targeted by the latest challenge.
+    latest_challenge = get_challenge_by_id(
+        latest["challenge_id"]
+    )
+
+    target_skill = (
+        latest_challenge["target_skill"]
+        if latest_challenge
+        else None
+    )
+
+    # Find the previous attempt for the same skill.
+    previous = None
+
+    if target_skill:
+
+        for evaluation in reversed(
+            evaluations[:-1]
+        ):
+
+            challenge = get_challenge_by_id(
+                evaluation["challenge_id"]
+            )
+
+            if (
+                challenge
+                and challenge["target_skill"]
+                == target_skill
+            ):
+
+                previous = evaluation
+                break
+
+    # Calculate improvement.
+    improvement = None
+
+    if previous and target_skill:
+
+        improvement = (
+            latest["scores"][target_skill]
+            - previous["scores"][target_skill]
+        )
+
+    return {
+        "has_progress": True,
+
+        "overall_score": round(
+            sum(skill_profile.values())
+            / len(skill_profile)
+        ),
+
+        "skill_profile": skill_profile,
+
+        "weakest_skill": weakest_skill,
+
+        "latest_scores": latest["scores"],
+
+        "target_skill": target_skill,
+
+        "previous_target_score": (
+            previous["scores"][target_skill]
+            if previous and target_skill
+            else None
+        ),
+
+        "current_target_score": (
+            latest["scores"][target_skill]
+            if target_skill
+            else None
+        ),
+
+        "improvement": improvement,
+
+        "attempt_count": len(evaluations),
     }

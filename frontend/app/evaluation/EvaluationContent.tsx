@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type SkillScores = {
@@ -18,6 +19,13 @@ type Evaluation = {
   weaknesses: string[];
   recommended_skill: string;
   feedback: string;
+};
+
+type Progress = {
+  target_skill: string | null;
+  previous_target_score: number | null;
+  current_target_score: number | null;
+  improvement: number | null;
 };
 
 const skills = [
@@ -49,6 +57,18 @@ const skills = [
 
 export default function EvaluationContent() {
   const router = useRouter();
+
+  const [progress, setProgress] =
+    useState<Progress | null>(null);
+
+  useEffect(() => {
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/progress`
+    )
+      .then((response) => response.json())
+      .then((data) => setProgress(data))
+      .catch(() => setProgress(null));
+  }, []);
 
   const stored =
     sessionStorage.getItem("latestEvaluation");
@@ -126,6 +146,43 @@ export default function EvaluationContent() {
             final answer.
           </p>
         </section>
+
+        {/* Adaptive Progress */}
+
+        {progress?.improvement !== null &&
+          progress?.improvement !== undefined &&
+          progress?.target_skill && (
+            <section className="mt-6 rounded-2xl border border-green-500/20 bg-green-500/5 p-7">
+              <p className="text-sm font-medium text-green-400">
+                ADAPTIVE PROGRESS
+              </p>
+
+              <h2 className="mt-2 text-2xl font-semibold">
+                {progress.improvement > 0
+                  ? `+${progress.improvement} improvement`
+                  : `${progress.improvement} change`}
+              </h2>
+
+              <p className="mt-3 text-zinc-400">
+                Your{" "}
+                <span className="font-medium text-white">
+                  {progress.target_skill.replaceAll(
+                    "_",
+                    " "
+                  )}
+                </span>{" "}
+                score improved from{" "}
+                <span className="text-white">
+                  {progress.previous_target_score}
+                </span>{" "}
+                to{" "}
+                <span className="text-white">
+                  {progress.current_target_score}
+                </span>{" "}
+                through targeted practice.
+              </p>
+            </section>
+          )}
 
         {/* Skill Breakdown */}
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type SkillProfile = {
@@ -28,12 +29,14 @@ type NextChallengeResponse = {
   challenge: Challenge;
 };
 
-const API_URL = "http://localhost:8000";
-
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8000";
 export default function Home() {
   const [data, setData] = useState<NextChallengeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     async function loadChallenge() {
@@ -98,71 +101,53 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="mx-auto max-w-6xl px-6 py-10">
-
         {/* Header */}
 
         <header className="mb-10">
-          <p className="text-sm font-medium text-blue-400">
-            AI WORK COACH
-          </p>
+          <p className="text-sm font-medium text-blue-400">AI WORK COACH</p>
 
           <h1 className="mt-2 text-4xl font-bold tracking-tight">
             Learn AI. Improve your work.
           </h1>
 
           <p className="mt-3 max-w-2xl text-zinc-400">
-            Build practical AI skills through realistic
-            workplace challenges and personalized coaching.
+            Build practical AI skills through realistic workplace challenges and
+            personalized coaching.
           </p>
         </header>
 
         {/* Overall score */}
 
         <section className="grid gap-6 md:grid-cols-3">
-
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-            <p className="text-sm text-zinc-400">
-              Overall AI Capability
-            </p>
+            <p className="text-sm text-zinc-400">Overall AI Capability</p>
 
             <div className="mt-3 flex items-end gap-2">
-              <span className="text-5xl font-bold">
-                {overallScore}
-              </span>
+              <span className="text-5xl font-bold">{overallScore}</span>
 
-              <span className="mb-2 text-zinc-500">
-                / 100
-              </span>
+              <span className="mb-2 text-zinc-500">/ 100</span>
             </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 md:col-span-2">
-            <p className="text-sm text-zinc-400">
-              Current Development Focus
-            </p>
+            <p className="text-sm text-zinc-400">Current Development Focus</p>
 
             <h2 className="mt-2 text-2xl font-semibold capitalize">
               {data.weakest_skill.replace("_", " ")}
             </h2>
 
             <p className="mt-2 text-sm text-zinc-400">
-              Your next challenge is designed to strengthen
-              this skill.
+              Your next challenge is designed to strengthen this skill.
             </p>
           </div>
-
         </section>
 
         {/* Skill profile */}
 
         <section className="mt-8">
-
-          <h2 className="text-xl font-semibold">
-            Your AI Skill Profile
-          </h2>
+          <h2 className="text-xl font-semibold">Your AI Skill Profile</h2>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
             {scores.map(([skill, score]) => (
               <div
                 key={skill}
@@ -173,9 +158,7 @@ export default function Home() {
                     {skill.replace("_", " ")}
                   </span>
 
-                  <span className="font-semibold">
-                    {score}
-                  </span>
+                  <span className="font-semibold">{score}</span>
                 </div>
 
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
@@ -188,17 +171,13 @@ export default function Home() {
                 </div>
               </div>
             ))}
-
           </div>
-
         </section>
 
         {/* Next challenge */}
 
         <section className="mt-10">
-
           <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-8">
-
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium uppercase text-blue-400">
                 Next Challenge
@@ -213,18 +192,14 @@ export default function Home() {
               </span>
             </div>
 
-            <h2 className="mt-5 text-3xl font-bold">
-              {data.challenge.title}
-            </h2>
+            <h2 className="mt-5 text-3xl font-bold">{data.challenge.title}</h2>
 
             <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
               {data.challenge.scenario}
             </p>
 
             <div className="mt-6">
-              <p className="text-sm font-semibold text-zinc-200">
-                Your task
-              </p>
+              <p className="text-sm font-semibold text-zinc-200">Your task</p>
 
               <p className="mt-2 max-w-3xl leading-7 text-zinc-400">
                 {data.challenge.task}
@@ -234,16 +209,13 @@ export default function Home() {
             <button
               className="mt-8 rounded-xl bg-white px-6 py-3 font-semibold text-black transition hover:bg-zinc-200"
               onClick={() => {
-                alert("Challenge screen coming next.");
+                router.push("/challenge/submit");
               }}
             >
               Start Challenge
             </button>
-
           </div>
-
         </section>
-
       </div>
     </main>
   );

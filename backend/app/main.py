@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+load_dotenv()
+
 from .challenges import (
     get_all_challenges,
     get_challenge_by_id,
@@ -17,17 +19,18 @@ from .evaluator import evaluate_submission
 from .llm.gemini import GeminiProvider
 from .schemas import EvaluationRequest, EvaluationResponse
 from .storage import (
+    init_db,
     save_evaluation,
     get_evaluations,
 )
-
-load_dotenv()
 
 
 app = FastAPI(
     title="AI Work Coach",
     version="0.1.0",
 )
+
+init_db()
 
 
 # --------------------------------------------------

@@ -3,3 +3,4 @@ uvicorn[standard]
 mistralai
 python-dotenv
 google-genai
+psycopg[binary]
